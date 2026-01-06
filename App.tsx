@@ -1,13 +1,12 @@
-
 import React, { useState, useEffect } from 'react';
 import { SERVICES, BENEFITS, PARTNERS, FAQS } from './constants';
 import WhatsAppButton from './components/WhatsAppButton';
-import AIChatBot from './components/AIChatBot';
 
 type FormStatus = 'idle' | 'submitting' | 'success' | 'error';
 
 const App: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activePartner, setActivePartner] = useState<string | null>(null);
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   
@@ -27,7 +26,17 @@ const App: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Prevent scrolling when mobile menu is open
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+  }, [isMenuOpen]);
+
   const scrollToSection = (id: string) => {
+    setIsMenuOpen(false);
     const element = document.getElementById(id);
     if (element) {
       const offset = 80;
@@ -48,51 +57,80 @@ const App: React.FC = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    const target = e.target as HTMLImageElement;
+    target.src = 'https://images.unsplash.com/photo-1544724569-5f546fd6f2b5?q=80&w=1200&auto=format&fit=crop';
+    target.onerror = null;
+  };
+
+  const saveToSafetyNet = (data: any) => {
+    try {
+      const existingLeads = JSON.parse(localStorage.getItem('es_leads_backup') || '[]');
+      existingLeads.push({ ...data, timestamp: new Date().toISOString() });
+      localStorage.setItem('es_leads_backup', JSON.stringify(existingLeads.slice(-20))); // Keep last 20
+      console.log('Lead saved to local safety net.');
+    } catch (e) {
+      console.error('Safety net failed', e);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormStatus('submitting');
 
     try {
-      // Using FormSubmit.co - a zero-config way to send forms to email
+      const formParams = new URLSearchParams();
+      formParams.append('Name', formData.name);
+      formParams.append('Phone', formData.phone);
+      formParams.append('Email', formData.email);
+      formParams.append('Service', formData.service);
+      formParams.append('Message', formData.details);
+      formParams.append('_subject', `New Lead from ElectroSpark: ${formData.name}`);
+      formParams.append('_template', 'table');
+      formParams.append('_captcha', 'false');
+
       const response = await fetch('https://formsubmit.co/ajax/electrospark1@gmail.com', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
           'Accept': 'application/json'
         },
-        body: JSON.stringify({
-          ...formData,
-          _subject: `New Lead: ${formData.name} - Monster Electrical Inquiry`,
-          _template: 'table', // Formats the email nicely
-          _captcha: 'false'   // Disables the captcha for a smoother AJAX experience
-        })
+        body: formParams.toString()
       });
 
-      if (response.ok) {
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        saveToSafetyNet(formData);
         setFormStatus('success');
-        // Reset form after a short delay or immediately
-        setFormData({ name: '', phone: '', email: '', service: 'Solar Installation', details: '' });
       } else {
+        console.error('FormSubmit Error:', data);
         setFormStatus('error');
       }
     } catch (error) {
-      console.error('Submission error:', error);
+      console.error('Network error during submission:', error);
       setFormStatus('error');
     }
+  };
+
+  const generateWhatsAppLink = () => {
+    const text = `Hello ElectroSpark! I am requesting a quote:\n\nName: ${formData.name}\nPhone: ${formData.phone}\nService: ${formData.service}\nDetails: ${formData.details}`;
+    return `https://wa.me/27724904296?text=${encodeURIComponent(text)}`;
   };
 
   return (
     <div className="min-h-screen">
       {/* Sticky Navigation */}
-      <nav className={`fixed top-0 left-0 w-full z-40 transition-all duration-300 ${
-        isScrolled ? 'bg-white shadow-lg py-2' : 'bg-transparent py-4'
+      <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
+        isScrolled || isMenuOpen ? 'bg-white shadow-lg py-2' : 'bg-transparent py-4'
       }`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center relative z-50">
           <div className="flex items-center cursor-pointer" onClick={() => scrollToSection('home')}>
-            <span className={`text-2xl font-black tracking-tighter ${isScrolled ? 'text-gray-900' : 'text-white md:text-gray-900'}`}>
-              MONSTER<span className="text-yellow-500">ELECTRICAL</span>
+            <span className={`text-2xl font-black tracking-tighter ${isScrolled || isMenuOpen ? 'text-gray-900' : 'text-white md:text-gray-900'}`}>
+              ELECTRO<span className="text-yellow-500">SPARK</span>
             </span>
           </div>
+          
           <div className="hidden md:flex space-x-8 items-center">
             {['Home', 'Services', 'About', 'Partners', 'Contact'].map((item) => (
               <button
@@ -112,8 +150,50 @@ const App: React.FC = () => {
               Get Quote
             </button>
           </div>
-          <div className="md:hidden">
-            <i className={`fa-solid fa-bars text-2xl ${isScrolled ? 'text-gray-900' : 'text-white'}`}></i>
+
+          <div className="md:hidden flex items-center gap-4">
+            <a href="https://wa.me/27724904296" target="_blank" rel="noopener noreferrer" className={`text-2xl ${isScrolled || isMenuOpen ? 'text-[#25D366]' : 'text-white'}`}>
+              <i className="fa-brands fa-whatsapp"></i>
+            </a>
+            <button 
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className={`${isScrolled || isMenuOpen ? 'text-gray-900' : 'text-white'} p-2 outline-none`}
+            >
+              <i className={`fa-solid ${isMenuOpen ? 'fa-xmark' : 'fa-bars'} text-2xl transition-transform duration-300 ${isMenuOpen ? 'rotate-90' : ''}`}></i>
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Menu Overlay */}
+        <div className={`md:hidden fixed inset-0 bg-white z-40 transition-all duration-500 ease-in-out transform ${
+          isMenuOpen ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
+        }`}>
+          <div className="flex flex-col items-center justify-center h-full space-y-8 px-4">
+            {['Home', 'Services', 'About', 'Partners', 'Contact'].map((item) => (
+              <button
+                key={item}
+                onClick={() => scrollToSection(item.toLowerCase())}
+                className="text-3xl font-black uppercase tracking-widest text-gray-900 hover:text-yellow-500 transition-colors"
+              >
+                {item}
+              </button>
+            ))}
+            <div className="pt-8 w-full max-w-xs space-y-4">
+              <button
+                onClick={() => scrollToSection('contact')}
+                className="w-full bg-yellow-500 text-black py-4 rounded-full font-black text-xl uppercase tracking-widest shadow-xl"
+              >
+                Get Quote
+              </button>
+              <a 
+                href="https://wa.me/27724904296"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full bg-[#25D366] text-white py-4 rounded-full font-black text-xl uppercase tracking-widest flex items-center justify-center gap-3 shadow-xl"
+              >
+                <i className="fa-brands fa-whatsapp text-2xl"></i> WhatsApp
+              </a>
+            </div>
           </div>
         </div>
       </nav>
@@ -125,6 +205,7 @@ const App: React.FC = () => {
             src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?q=80&w=2069&auto=format&fit=crop"
             className="w-full h-full object-cover brightness-50"
             alt="Electrician at work"
+            onError={handleImageError}
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 to-transparent"></div>
         </div>
@@ -165,34 +246,41 @@ const App: React.FC = () => {
             <h2 className="text-4xl md:text-5xl font-black text-gray-900">What We Do</h2>
             <div className="w-20 h-1 bg-yellow-500 mx-auto"></div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
             {SERVICES.map((service) => (
               <div
                 key={service.id}
-                className="group relative bg-gray-50 rounded-2xl overflow-hidden border border-gray-100 shadow-sm transition-all duration-500 hover:shadow-2xl hover:-translate-y-2"
+                className="group relative bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-xl transition-all duration-500 hover:shadow-2xl hover:-translate-y-2"
               >
-                <div className="h-56 overflow-hidden">
+                <div className="h-[450px] md:h-[400px] w-full overflow-hidden bg-gray-100 relative">
                   <img
                     src={service.image}
                     alt={service.title}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
+                    loading="eager"
+                    onError={handleImageError}
                   />
+                  <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent opacity-60"></div>
+                  <div className="absolute inset-0 flex items-center justify-center opacity-10 group-hover:opacity-20 transition-opacity">
+                     <i className={`fa-solid ${service.icon} text-9xl text-black`}></i>
+                  </div>
                 </div>
-                <div className="p-8">
-                  <div className="w-14 h-14 bg-yellow-500/10 text-yellow-600 rounded-xl flex items-center justify-center mb-6 text-2xl transition-all group-hover:bg-yellow-500 group-hover:text-black">
+                
+                <div className="p-10 relative -mt-20 bg-white mx-6 rounded-3xl shadow-lg mb-8 border border-gray-50">
+                  <div className="w-16 h-16 bg-yellow-500 text-black rounded-2xl flex items-center justify-center mb-6 text-3xl shadow-lg transition-transform group-hover:rotate-6">
                     <i className={`fa-solid ${service.icon}`}></i>
                   </div>
-                  <h3 className="text-2xl font-bold mb-4 group-hover:text-yellow-600 transition-colors">
+                  <h3 className="text-2xl font-black mb-4 text-gray-900">
                     {service.title}
                   </h3>
-                  <p className="text-gray-600 mb-6 leading-relaxed">
+                  <p className="text-gray-600 mb-8 leading-relaxed text-lg">
                     {service.description}
                   </p>
                   <button
                     onClick={() => scrollToSection('contact')}
-                    className="text-sm font-black uppercase tracking-widest text-gray-900 flex items-center gap-2 group-hover:gap-4 transition-all"
+                    className="w-full py-4 rounded-xl bg-gray-900 text-white font-black uppercase tracking-widest text-sm hover:bg-yellow-500 hover:text-black transition-all flex items-center justify-center gap-3"
                   >
-                    Enquire Now <i className="fa-solid fa-arrow-right text-yellow-500"></i>
+                    Enquire Now <i className="fa-solid fa-arrow-right"></i>
                   </button>
                 </div>
               </div>
@@ -206,7 +294,7 @@ const App: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div className="space-y-8">
-              <h4 className="text-yellow-500 font-bold uppercase tracking-widest">Why Monster Electrical?</h4>
+              <h4 className="text-yellow-500 font-bold uppercase tracking-widest">Why ElectroSpark?</h4>
               <h2 className="text-4xl md:text-6xl font-black">UNCOMPROMISING SAFETY, EXCEPTIONAL SERVICE</h2>
               <p className="text-gray-400 text-lg leading-relaxed">
                 With years of industry presence, we have built a reputation for tackling the most complex electrical challenges. We prioritize safety above all else, ensuring every wire we pull meets international standards.
@@ -231,6 +319,7 @@ const App: React.FC = () => {
                 src="https://images.unsplash.com/photo-1544724569-5f546fd6f2b5?q=80&w=1887&auto=format&fit=crop"
                 alt="Expertise"
                 className="relative rounded-2xl w-full h-[600px] object-cover border border-white/10 shadow-2xl"
+                onError={handleImageError}
               />
               <div className="absolute bottom-10 left-10 right-10 bg-white/10 backdrop-blur-xl p-8 rounded-xl border border-white/20">
                 <div className="flex justify-between items-center">
@@ -271,7 +360,7 @@ const App: React.FC = () => {
                 }`}
               >
                 <div className="h-24 flex items-center justify-center mb-6 grayscale hover:grayscale-0 transition-all">
-                  <img src={partner.logo} alt={partner.name} className="max-h-full max-w-full object-contain" />
+                  <img src={partner.logo} alt={partner.name} className="max-h-full max-w-full object-contain" onError={handleImageError} />
                 </div>
                 <h3 className="text-center font-bold text-gray-900 mb-2">{partner.name}</h3>
                 {activePartner === partner.id && (
@@ -308,7 +397,15 @@ const App: React.FC = () => {
                   </div>
                   <div>
                     <div className="text-sm text-gray-500 uppercase font-bold tracking-widest mb-1">Call Support</div>
-                    <div className="text-xl font-bold text-gray-900">+27 72 490 4296</div>
+                    <a href="tel:+27724904296" className="text-xl font-bold text-gray-900 block hover:text-yellow-600 transition-colors">+27 72 490 4296</a>
+                    <a 
+                      href="https://wa.me/27724904296" 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="inline-flex items-center gap-2 mt-2 bg-[#25D366] text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-[#20ba5a] transition-all"
+                    >
+                      <i className="fa-brands fa-whatsapp"></i> Chat on WhatsApp
+                    </a>
                   </div>
                 </div>
                 <div className="flex gap-6 items-start">
@@ -317,7 +414,7 @@ const App: React.FC = () => {
                   </div>
                   <div>
                     <div className="text-sm text-gray-500 uppercase font-bold tracking-widest mb-1">Email Us</div>
-                    <div className="text-xl font-bold text-gray-900">info@monsterelectrical.co.za</div>
+                    <a href="mailto:electrospark1@gmail.com" className="text-xl font-bold text-gray-900 block hover:text-yellow-600 transition-colors">electrospark1@gmail.com</a>
                   </div>
                 </div>
                 <div className="flex gap-6 items-start">
@@ -326,7 +423,7 @@ const App: React.FC = () => {
                   </div>
                   <div>
                     <div className="text-sm text-gray-500 uppercase font-bold tracking-widest mb-1">Office Location</div>
-                    <div className="text-xl font-bold text-gray-900">Johannesburg, Gauteng, SA</div>
+                    <div className="text-xl font-bold text-gray-900">Cape Town, Western Cape, South Africa</div>
                   </div>
                 </div>
               </div>
@@ -361,28 +458,41 @@ const App: React.FC = () => {
               </div>
               
               {formStatus === 'success' ? (
-                <div className="relative z-10 flex flex-col items-center justify-center py-20 text-center animate-fadeIn">
-                  <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-5xl mb-8">
-                    <i className="fa-solid fa-circle-check"></i>
+                <div className="relative z-10 flex flex-col items-center justify-center py-10 text-center animate-fadeIn">
+                  <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-4xl mb-6">
+                    <i className="fa-solid fa-check"></i>
                   </div>
-                  <h3 className="text-3xl font-black text-gray-900 mb-4">Request Received!</h3>
-                  <p className="text-gray-600 mb-8 leading-relaxed max-w-sm">
-                    Thank you, {formData.name || 'valued customer'}. We've forwarded your details to our team. Expect a call within 2 hours.
+                  <h3 className="text-2xl font-black text-gray-900 mb-2">Thank You!</h3>
+                  <p className="text-gray-600 mb-8 text-lg leading-relaxed max-w-sm">
+                    Your request has been received. Our technical team will review your requirements and contact you shortly.
                   </p>
-                  <button 
-                    onClick={() => setFormStatus('idle')}
-                    className="text-yellow-600 font-bold uppercase tracking-widest hover:text-yellow-700 underline underline-offset-4"
-                  >
-                    Send Another Request
-                  </button>
+                  
+                  <div className="flex flex-col gap-4 w-full">
+                    <a 
+                      href={generateWhatsAppLink()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full bg-[#25D366] text-white py-4 rounded-xl font-bold uppercase tracking-widest flex items-center justify-center gap-3 shadow-xl hover:bg-[#20ba5a] transition-all"
+                    >
+                      <i className="fa-brands fa-whatsapp text-2xl"></i> Chat on WhatsApp
+                    </a>
+                    
+                    <button 
+                      onClick={() => setFormStatus('idle')}
+                      className="text-gray-500 font-bold hover:text-gray-900 transition-colors text-sm"
+                    >
+                      Return to Website
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <form className="space-y-6 relative z-10" onSubmit={handleSubmit}>
                   {formStatus === 'error' && (
                     <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm font-medium border border-red-100 animate-shake">
-                      Something went wrong. Please try again or call us directly.
+                      An error occurred. Please try again or contact us via WhatsApp.
                     </div>
                   )}
+                  
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <label className="text-xs uppercase font-black text-gray-500 tracking-widest">Full Name</label>
@@ -454,14 +564,11 @@ const App: React.FC = () => {
                     className="w-full bg-gray-900 text-yellow-500 py-5 rounded-xl font-black uppercase tracking-widest text-lg hover:bg-black hover:text-yellow-400 disabled:bg-gray-800 disabled:text-gray-500 transition-all shadow-xl flex items-center justify-center gap-3 group"
                   >
                     {formStatus === 'submitting' ? (
-                      <><i className="fa-solid fa-spinner animate-spin"></i> Processing...</>
+                      <><i className="fa-solid fa-spinner animate-spin"></i> Submitting...</>
                     ) : (
                       <><span className="group-hover:translate-x-1 transition-transform">Request Your Free Quote</span> <i className="fa-solid fa-paper-plane group-hover:-translate-y-1 group-hover:translate-x-1 transition-transform"></i></>
                     )}
                   </button>
-                  <p className="text-center text-xs text-gray-400">
-                    Your inquiry will be sent directly to electrospark1@gmail.com
-                  </p>
                 </form>
               )}
             </div>
@@ -475,17 +582,15 @@ const App: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16 mb-16">
             <div className="space-y-6">
               <span className="text-3xl font-black tracking-tighter">
-                MONSTER<span className="text-yellow-500">ELECTRICAL</span>
+                ELECTRO<span className="text-yellow-500">SPARK</span>
               </span>
               <p className="text-gray-500 leading-relaxed">
                 South Africa's premier electrical service provider. We deliver power where it matters most, with a commitment to excellence and safety.
               </p>
               <div className="flex gap-4">
-                {['facebook', 'twitter', 'linkedin', 'instagram'].map(platform => (
-                  <a key={platform} href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-yellow-500 hover:text-black transition-all">
-                    <i className={`fa-brands fa-${platform}`}></i>
-                  </a>
-                ))}
+                <a href="https://wa.me/27724904296" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-[#25D366] hover:text-white transition-all">
+                  <i className="fa-brands fa-whatsapp text-xl"></i>
+                </a>
               </div>
             </div>
             <div>
@@ -534,7 +639,7 @@ const App: React.FC = () => {
             </div>
           </div>
           <div className="pt-12 border-t border-white/5 flex flex-col md:row justify-between items-center gap-8 text-gray-500 text-sm">
-            <p>© {new Date().getFullYear()} Monster Electrical. All Rights Reserved.</p>
+            <p>© {new Date().getFullYear()} ElectroSpark. All Rights Reserved.</p>
             <div className="flex gap-8">
               <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
               <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
@@ -545,7 +650,6 @@ const App: React.FC = () => {
       </footer>
 
       <WhatsAppButton />
-      <AIChatBot />
     </div>
   );
 };

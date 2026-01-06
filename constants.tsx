@@ -1,4 +1,3 @@
-
 import { ServiceItem, BenefitItem, PartnerItem, FAQItem } from './types';
 
 export const SERVICES: ServiceItem[] = [
@@ -7,42 +6,42 @@ export const SERVICES: ServiceItem[] = [
     title: 'Maintenance & Repairs',
     description: 'Comprehensive electrical diagnostics and repairs for residential and commercial properties. We fix faults fast.',
     icon: 'fa-tools',
-    image: 'https://picsum.photos/seed/elec1/800/600'
+    image: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?q=80&w=1200&auto=format&fit=crop'
   },
   {
     id: 'installations',
     title: 'New Installations',
     description: 'Full electrical planning and execution for new builds, renovations, and site extensions with precision.',
     icon: 'fa-plug',
-    image: 'https://picsum.photos/seed/elec2/800/600'
+    image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?q=80&w=1200&auto=format&fit=crop'
   },
   {
     id: 'solar',
     title: 'Solar & Inverter Systems',
     description: 'Transition to green energy. High-efficiency solar panels and reliable backup power systems tailored to your needs.',
     icon: 'fa-sun',
-    image: 'https://picsum.photos/seed/elec3/800/600'
+    image: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?q=80&w=1200&auto=format&fit=crop'
   },
   {
     id: 'rewiring',
     title: 'DB & Rewiring',
     description: 'Upgrading distribution boards and complete building rewiring to ensure safety and modern capacity compliance.',
     icon: 'fa-network-wired',
-    image: 'https://picsum.photos/seed/elec4/800/600'
+    image: 'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?q=80&w=1200&auto=format&fit=crop'
   },
   {
     id: 'coc',
     title: 'COC Certifications',
     description: 'Legally mandatory Electrical Certificate of Compliance for property transfers, insurance, and safety peace of mind.',
     icon: 'fa-certificate',
-    image: 'https://picsum.photos/seed/elec5/800/600'
+    image: 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?q=80&w=1200&auto=format&fit=crop'
   },
   {
     id: 'timers',
     title: 'Geyser Timers & Automation',
     description: 'Optimize your energy consumption with smart timers and home automation for high-usage appliances.',
     icon: 'fa-clock',
-    image: 'https://picsum.photos/seed/elec6/800/600'
+    image: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=1200&auto=format&fit=crop'
   }
 ];
 
@@ -77,19 +76,19 @@ export const PARTNERS: PartnerItem[] = [
   {
     id: 'eca',
     name: 'ECA South Africa',
-    logo: 'https://picsum.photos/seed/partner1/200/100',
+    logo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?q=80&w=200&auto=format&fit=crop',
     description: 'The Electrical Contractors\' Association ensures high standards of workmanship and ethical conduct in the industry.'
   },
   {
     id: 'ecb',
     name: 'ECB (Electrical Conformance Board)',
-    logo: 'https://picsum.photos/seed/partner2/200/100',
+    logo: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=200&auto=format&fit=crop',
     description: 'Standardization and conformance monitoring for electrical installations nationwide.'
   },
   {
     id: 'solarassoc',
     name: 'Solar Accreditation Body',
-    logo: 'https://picsum.photos/seed/partner3/200/100',
+    logo: 'https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?q=80&w=200&auto=format&fit=crop',
     description: 'Verified specialists in renewable energy and photovoltaic system design.'
   }
 ];

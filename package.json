@@ -1,5 +1,5 @@
 {
-  "name": "monster-electrical-services---professional-solutions",
+  "name": "electrospark",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "react-dom": "^19.2.3",
-    "@google/genai": "^1.34.0",
     "react": "^19.2.3"
   },
   "devDependencies": {

@@ -1,8 +1,5 @@
 {
-  "name": "Monster Electrical Services - Professional Solutions",
+  "name": "ElectroSpark",
   "description": "A high-end, responsive single-page website for professional electrical services including solar installations, maintenance, and COC certifications.",
-  "requestFramePermissions": [
-    "camera",
-    "microphone"
-  ]
+  "requestFramePermissions": []
 }
